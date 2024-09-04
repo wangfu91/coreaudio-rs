@@ -4,6 +4,7 @@ extern crate coreaudio;
 
 use std::sync::{Arc, Mutex};
 
+use coreaudio::audio_unit::audio_device_extension::audio_device_duck;
 use coreaudio::audio_unit::audio_format::LinearPcmFlags;
 use coreaudio::audio_unit::macos_helpers::{get_default_device_id, vpio_audio_unit_from_device_id};
 use coreaudio::audio_unit::render_callback::{self, data};
@@ -108,11 +109,13 @@ fn main() -> Result<(), coreaudio::Error> {
 
     input_audio_unit.initialize()?;
 
+    unsafe { audio_device_duck(default_output_device_id, 1.0, std::ptr::null(), 0.5) };
+
     input_audio_unit.start()?;
 
     println!("Input audio unit recording started");
 
-    std::thread::sleep(std::time::Duration::from_millis(30 * 1000));
+    std::thread::sleep(std::time::Duration::from_millis(10 * 1000));
 
     writer.lock().unwrap().take().unwrap().finalize().unwrap();
 

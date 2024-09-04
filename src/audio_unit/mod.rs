@@ -35,6 +35,7 @@ pub use self::types::{
 #[cfg(target_os = "macos")]
 pub mod macos_helpers;
 
+pub mod audio_device_extension;
 pub mod audio_format;
 pub mod render_callback;
 pub mod sample_format;

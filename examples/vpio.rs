@@ -2,13 +2,10 @@
 
 extern crate coreaudio;
 
-use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 
 use coreaudio::audio_unit::audio_format::LinearPcmFlags;
-use coreaudio::audio_unit::macos_helpers::{
-    audio_unit_from_device_id, get_default_device_id, vpio_audio_unit_from_device_id,
-};
+use coreaudio::audio_unit::macos_helpers::{get_default_device_id, vpio_audio_unit_from_device_id};
 use coreaudio::audio_unit::render_callback::{self, data};
 use coreaudio::audio_unit::{Element, SampleFormat, Scope, StreamFormat};
 use coreaudio::sys::*;
@@ -22,6 +19,13 @@ const SAMPLE_FORMAT: SampleFormat = SampleFormat::F32;
 // type S = i8; const SAMPLE_FORMAT: SampleFormat = SampleFormat::I8;
 
 fn main() -> Result<(), coreaudio::Error> {
+    let spec = hound::WavSpec {
+        channels: 1,
+        sample_rate: 48000,
+        bits_per_sample: 32,
+        sample_format: hound::SampleFormat::Float,
+    };
+
     let default_input_device_id = get_default_device_id(true).unwrap();
     let default_output_device_id = get_default_device_id(false).unwrap();
 
@@ -66,14 +70,12 @@ fn main() -> Result<(), coreaudio::Error> {
         Some(&asbd),
     )?;
 
-    let buffer_left = Arc::new(Mutex::new(VecDeque::<S>::new()));
-    let producer_left = buffer_left.clone();
-    let consumer_left = buffer_left.clone();
-    let buffer_right = Arc::new(Mutex::new(VecDeque::<S>::new()));
-    let producer_right = buffer_right.clone();
-    let consumer_right = buffer_right.clone();
-
     type Args = render_callback::Args<data::NonInterleaved<S>>;
+
+    let writer = hound::WavWriter::create("record.wav", spec).unwrap();
+    let writer = Arc::new(Mutex::new(Some(writer)));
+    // Run the input stream on a separate thread.
+    let writer_2 = writer.clone();
 
     input_audio_unit.set_input_callback(move |args| {
         let Args {
@@ -86,15 +88,21 @@ fn main() -> Result<(), coreaudio::Error> {
         // that may block for an unknown amount of time inside the callback
         // of a real application.
         println!("input cb {} frames", num_frames);
-        let buffer_left = producer_left.lock().unwrap();
-        let buffer_right = producer_right.lock().unwrap();
-        let mut buffers = vec![buffer_left, buffer_right];
-        for i in 0..num_frames {
-            for (ch, channel) in data.channels_mut().enumerate() {
-                let value: S = channel[i];
-                buffers[ch].push_back(value);
+
+        // Lock the WAV writer
+        //let mut writer = writer_clone_for_callback.lock().unwrap();
+
+        if let Ok(mut guard) = writer_2.try_lock() {
+            if let Some(writer_3) = guard.as_mut() {
+                for i in 0..num_frames {
+                    for (_, channel) in data.channels_mut().enumerate() {
+                        let value: S = channel[i];
+                        writer_3.write_sample(value).unwrap();
+                    }
+                }
             }
         }
+
         Ok(())
     })?;
 
@@ -104,7 +112,9 @@ fn main() -> Result<(), coreaudio::Error> {
 
     println!("Input audio unit recording started");
 
-    std::thread::sleep(std::time::Duration::from_millis(10 * 1000));
+    std::thread::sleep(std::time::Duration::from_millis(30 * 1000));
+
+    writer.lock().unwrap().take().unwrap().finalize().unwrap();
 
     Ok(())
 }

@@ -75,7 +75,7 @@ fn main() -> Result<(), coreaudio::Error> {
     let writer = hound::WavWriter::create("record.wav", spec).unwrap();
     let writer = Arc::new(Mutex::new(Some(writer)));
     // Run the input stream on a separate thread.
-    let writer_2 = writer.clone();
+    let writer_clone = writer.clone();
 
     input_audio_unit.set_input_callback(move |args| {
         let Args {
@@ -92,12 +92,12 @@ fn main() -> Result<(), coreaudio::Error> {
         // Lock the WAV writer
         //let mut writer = writer_clone_for_callback.lock().unwrap();
 
-        if let Ok(mut guard) = writer_2.try_lock() {
-            if let Some(writer_3) = guard.as_mut() {
+        if let Ok(mut guard) = writer_clone.try_lock() {
+            if let Some(writer) = guard.as_mut() {
                 for i in 0..num_frames {
                     for (_, channel) in data.channels_mut().enumerate() {
                         let value: S = channel[i];
-                        writer_3.write_sample(value).unwrap();
+                        writer.write_sample(value).unwrap();
                     }
                 }
             }

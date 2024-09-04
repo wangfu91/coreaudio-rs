@@ -159,7 +159,9 @@ impl AudioUnit {
             let instance: sys::AudioUnit = instance_uninit.assume_init();
 
             // Initialise the audio unit!
-            try_os_status!(sys::AudioUnitInitialize(instance));
+
+            // try_os_status!(sys::AudioUnitInitialize(instance));
+
             Ok(AudioUnit {
                 instance,
                 maybe_render_callback: None,

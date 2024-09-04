@@ -12,8 +12,8 @@ use std::time::Duration;
 use std::{mem, thread};
 
 use core_foundation_sys::string::{CFStringGetCString, CFStringGetCStringPtr, CFStringRef};
-use sys;
 use sys::pid_t;
+use sys::{self, kAUVoiceIOProperty_MuteOutput};
 use sys::{
     kAudioDevicePropertyAvailableNominalSampleRates, kAudioDevicePropertyDeviceIsAlive,
     kAudioDevicePropertyDeviceNameCFString, kAudioDevicePropertyHogMode,
@@ -79,7 +79,10 @@ pub fn get_device_id_from_name(name: &str, input: bool) -> Option<AudioDeviceID>
     if let Ok(all_ids) = get_audio_device_ids() {
         return all_ids
             .iter()
-            .find(|id| get_device_name(**id).unwrap_or_default() == name && get_audio_device_supports_scope(**id, scope).unwrap_or_default())
+            .find(|id| {
+                get_device_name(**id).unwrap_or_default() == name
+                    && get_audio_device_supports_scope(**id, scope).unwrap_or_default()
+            })
             .copied();
     }
     None
@@ -118,6 +121,39 @@ pub fn audio_unit_from_device_id(
         Scope::Global,
         Element::Output,
         Some(&device_id),
+    )?;
+
+    Ok(audio_unit)
+}
+
+pub fn vpio_audio_unit_from_device_id(
+    input_device_id: AudioDeviceID,
+    output_device_id: AudioDeviceID,
+) -> Result<AudioUnit, Error> {
+    let mut audio_unit = AudioUnit::new(IOType::VoiceProcessingIO)?;
+
+    audio_unit.set_property(
+        kAudioOutputUnitProperty_CurrentDevice,
+        Scope::Global,
+        Element::Input,
+        Some(&input_device_id),
+    )?;
+
+    audio_unit.set_property(
+        kAudioOutputUnitProperty_CurrentDevice,
+        Scope::Global,
+        Element::Output,
+        Some(&output_device_id),
+    )?;
+
+    // Mute the VoiceProcessing AU (Value 0 stands for "mute")
+    // VoiceProcessing AU is a output node and has the ability of playing things out. We simply don't want that.
+    let mute = 0u32;
+    audio_unit.set_property(
+        kAUVoiceIOProperty_MuteOutput,
+        Scope::Global,
+        Element::Input,
+        Some(&mute),
     )?;
 
     Ok(audio_unit)

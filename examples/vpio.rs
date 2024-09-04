@@ -109,13 +109,13 @@ fn main() -> Result<(), coreaudio::Error> {
 
     input_audio_unit.initialize()?;
 
-    unsafe { audio_device_duck(default_output_device_id, 1.0, std::ptr::null(), 0.5) };
+    unsafe { audio_device_duck(default_output_device_id, 1.0, std::ptr::null(), 0.3) };
 
     input_audio_unit.start()?;
 
     println!("Input audio unit recording started");
 
-    std::thread::sleep(std::time::Duration::from_millis(10 * 1000));
+    std::thread::sleep(std::time::Duration::from_millis(30 * 1000));
 
     writer.lock().unwrap().take().unwrap().finalize().unwrap();
 

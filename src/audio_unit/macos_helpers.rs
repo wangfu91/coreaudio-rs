@@ -130,7 +130,7 @@ pub fn vpio_audio_unit_from_device_id(
     input_device_id: AudioDeviceID,
     output_device_id: AudioDeviceID,
 ) -> Result<AudioUnit, Error> {
-    let mut audio_unit = AudioUnit::new(IOType::VoiceProcessingIO)?;
+    let mut audio_unit = AudioUnit::new_without_initialize(IOType::VoiceProcessingIO)?;
 
     audio_unit.set_property(
         kAudioOutputUnitProperty_CurrentDevice,

@@ -115,9 +115,23 @@ impl AudioUnit {
         AudioUnit::new_with_flags(ty, 0, 0)
     }
 
+    pub fn new_without_initialize<T>(ty: T) -> Result<AudioUnit, Error>
+    where
+        T: Into<Type>,
+    {
+        AudioUnit::new_instance(ty, 0, 0, false)
+    }
+
     /// The same as [**AudioUnit::new**](./struct.AudioUnit#method.new) but with the given
     /// component flags and mask.
     pub fn new_with_flags<T>(ty: T, flags: u32, mask: u32) -> Result<AudioUnit, Error>
+    where
+        T: Into<Type>,
+    {
+        AudioUnit::new_instance(ty, flags, mask, true)
+    }
+
+    fn new_instance<T>(ty: T, flags: u32, mask: u32, initialize: bool) -> Result<AudioUnit, Error>
     where
         T: Into<Type>,
     {
@@ -159,9 +173,10 @@ impl AudioUnit {
             ));
             let instance: sys::AudioUnit = instance_uninit.assume_init();
 
-            // Initialise the audio unit!
-
-            // try_os_status!(sys::AudioUnitInitialize(instance));
+            if initialize {
+                // Initialise the audio unit!
+                try_os_status!(sys::AudioUnitInitialize(instance));
+            }
 
             Ok(AudioUnit {
                 instance,

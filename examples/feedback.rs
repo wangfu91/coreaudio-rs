@@ -104,6 +104,9 @@ fn main() -> Result<(), coreaudio::Error> {
         }
         Ok(())
     })?;
+
+    input_audio_unit.initialize()?;
+
     input_audio_unit.start()?;
 
     output_audio_unit.set_render_callback(move |args: Args| {
@@ -131,6 +134,8 @@ fn main() -> Result<(), coreaudio::Error> {
         }
         Ok(())
     })?;
+
+    output_audio_unit.initialize()?;
     output_audio_unit.start()?;
 
     std::thread::sleep(std::time::Duration::from_millis(100000));

@@ -73,7 +73,7 @@ fn main() -> Result<(), coreaudio::Error> {
 
     type Args = render_callback::Args<data::NonInterleaved<S>>;
 
-    let writer = hound::WavWriter::create("record.wav", spec).unwrap();
+    let writer = hound::WavWriter::create("recording.wav", spec).unwrap();
     let writer = Arc::new(Mutex::new(Some(writer)));
     // Run the input stream on a separate thread.
     let writer_clone = writer.clone();
@@ -89,9 +89,6 @@ fn main() -> Result<(), coreaudio::Error> {
         // that may block for an unknown amount of time inside the callback
         // of a real application.
         println!("input cb {} frames", num_frames);
-
-        // Lock the WAV writer
-        //let mut writer = writer_clone_for_callback.lock().unwrap();
 
         if let Ok(mut guard) = writer_clone.try_lock() {
             if let Some(writer) = guard.as_mut() {

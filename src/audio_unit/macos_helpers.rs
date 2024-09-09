@@ -126,6 +126,7 @@ pub fn audio_unit_from_device_id(
     Ok(audio_unit)
 }
 
+// https://github.com/mumble-voip/mumble/blob/master/src/mumble/CoreAudio.mm
 pub fn vpio_audio_unit_from_device_id(
     input_device_id: AudioDeviceID,
     output_device_id: AudioDeviceID,
@@ -139,6 +140,8 @@ pub fn vpio_audio_unit_from_device_id(
         Some(&input_device_id),
     )?;
 
+    // It is reported that the echo source need to be specified as the output device.
+    // If no output device is specified, MacOS would take the default output device as echo source.
     audio_unit.set_property(
         kAudioOutputUnitProperty_CurrentDevice,
         Scope::Global,

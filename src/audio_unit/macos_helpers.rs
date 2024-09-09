@@ -12,7 +12,6 @@ use std::time::Duration;
 use std::{mem, thread};
 
 use core_foundation_sys::string::{CFStringGetCString, CFStringGetCStringPtr, CFStringRef};
-use sys::pid_t;
 use sys::{self, kAUVoiceIOProperty_MuteOutput};
 use sys::{
     kAudioDevicePropertyAvailableNominalSampleRates, kAudioDevicePropertyDeviceIsAlive,
@@ -31,6 +30,7 @@ use sys::{
     AudioObjectSetPropertyData, AudioStreamBasicDescription, AudioStreamRangedDescription,
     AudioValueRange, OSStatus,
 };
+use sys::{kAudioDevicePropertyStreamFormat, pid_t};
 
 use crate::audio_unit::audio_format::{AudioFormat, LinearPcmFlags};
 use crate::audio_unit::sample_format::SampleFormat;
@@ -630,6 +630,44 @@ pub fn get_supported_physical_stream_formats(
         formats
     };
     Ok(allformats)
+}
+
+fn get_default_stream_format(
+    device_id: AudioDeviceID,
+    scope: AudioObjectPropertyScope,
+) -> Result<AudioStreamBasicDescription, Error> {
+    let property_address = AudioObjectPropertyAddress {
+        mSelector: kAudioDevicePropertyStreamFormat,
+        mScope: scope,
+        mElement: kAudioObjectPropertyElementMaster,
+    };
+    let asbd: mem::MaybeUninit<AudioStreamBasicDescription> = mem::MaybeUninit::zeroed();
+    let data_size = mem::size_of::<AudioStreamBasicDescription>() as u32;
+    let status = unsafe {
+        AudioObjectGetPropertyData(
+            device_id,
+            &property_address as *const _,
+            0,
+            null(),
+            &data_size as *const _ as *mut _,
+            &asbd as *const _ as *mut _,
+        )
+    };
+    Error::from_os_status(status)?;
+    let asbd = unsafe { asbd.assume_init() };
+    Ok(asbd)
+}
+
+pub fn get_default_input_stream_format(
+    device_id: AudioDeviceID,
+) -> Result<AudioStreamBasicDescription, Error> {
+    get_default_stream_format(device_id, kAudioObjectPropertyScopeInput)
+}
+
+pub fn get_default_output_stream_format(
+    device_id: AudioDeviceID,
+) -> Result<AudioStreamBasicDescription, Error> {
+    get_default_stream_format(device_id, kAudioObjectPropertyScopeOutput)
 }
 
 /// Changing the sample rate is an asynchonous process.

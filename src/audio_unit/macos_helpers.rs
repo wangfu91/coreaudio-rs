@@ -12,7 +12,7 @@ use std::time::Duration;
 use std::{mem, thread};
 
 use core_foundation_sys::string::{CFStringGetCString, CFStringGetCStringPtr, CFStringRef};
-use sys::{self, kAUVoiceIOProperty_MuteOutput};
+use sys::{self, kAUVoiceIOProperty_BypassVoiceProcessing, kAUVoiceIOProperty_MuteOutput};
 use sys::{
     kAudioDevicePropertyAvailableNominalSampleRates, kAudioDevicePropertyDeviceIsAlive,
     kAudioDevicePropertyDeviceNameCFString, kAudioDevicePropertyHogMode,
@@ -130,6 +130,7 @@ pub fn audio_unit_from_device_id(
 pub fn vpio_audio_unit_from_device_id(
     input_device_id: AudioDeviceID,
     output_device_id: AudioDeviceID,
+    bypass_voice_processing: bool,
 ) -> Result<AudioUnit, Error> {
     let mut audio_unit = AudioUnit::new_without_initialize(IOType::VoiceProcessingIO)?;
 
@@ -158,6 +159,16 @@ pub fn vpio_audio_unit_from_device_id(
         Element::Input,
         Some(&mute),
     )?;
+
+    if bypass_voice_processing {
+        let bypass = 1u32;
+        audio_unit.set_property(
+            kAUVoiceIOProperty_BypassVoiceProcessing,
+            Scope::Global,
+            Element::Input,
+            Some(&bypass),
+        )?;
+    }
 
     Ok(audio_unit)
 }

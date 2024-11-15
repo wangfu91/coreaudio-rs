@@ -12,7 +12,9 @@ use std::time::Duration;
 use std::{mem, thread};
 
 use core_foundation_sys::string::{CFStringGetCString, CFStringGetCStringPtr, CFStringRef};
-use sys::{self, kAUVoiceIOProperty_BypassVoiceProcessing, kAUVoiceIOProperty_MuteOutput};
+use sys::{
+    self, kAUVoiceIOProperty_BypassVoiceProcessing, kAUVoiceIOProperty_VoiceProcessingEnableAGC,
+};
 use sys::{
     kAudioDevicePropertyAvailableNominalSampleRates, kAudioDevicePropertyDeviceIsAlive,
     kAudioDevicePropertyDeviceNameCFString, kAudioDevicePropertyHogMode,
@@ -150,14 +152,13 @@ pub fn vpio_audio_unit_from_device_id(
         Some(&output_device_id),
     )?;
 
-    // Mute the VoiceProcessing AU (Value 0 stands for "mute")
-    // VoiceProcessing AU is a output node and has the ability of playing things out. We simply don't want that.
-    let mute = 0u32;
+    // Disable automatic gain control on the processed microphone uplink signal, it's On by default.
+    let auto_gain_ctrl = 0u32;
     audio_unit.set_property(
-        kAUVoiceIOProperty_MuteOutput,
+        kAUVoiceIOProperty_VoiceProcessingEnableAGC,
         Scope::Global,
         Element::Input,
-        Some(&mute),
+        Some(&auto_gain_ctrl),
     )?;
 
     if bypass_voice_processing {

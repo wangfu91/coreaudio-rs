@@ -152,15 +152,6 @@ pub fn vpio_audio_unit_from_device_id(
         Some(&output_device_id),
     )?;
 
-    // Disable automatic gain control on the processed microphone uplink signal, it's On by default.
-    let auto_gain_ctrl = 0u32;
-    audio_unit.set_property(
-        kAUVoiceIOProperty_VoiceProcessingEnableAGC,
-        Scope::Global,
-        Element::Input,
-        Some(&auto_gain_ctrl),
-    )?;
-
     if bypass_voice_processing {
         let bypass = 1u32;
         audio_unit.set_property(

@@ -12,9 +12,7 @@ use std::time::Duration;
 use std::{mem, thread};
 
 use core_foundation_sys::string::{CFStringGetCString, CFStringGetCStringPtr, CFStringRef};
-use sys::{
-    self, kAUVoiceIOProperty_BypassVoiceProcessing, kAUVoiceIOProperty_VoiceProcessingEnableAGC,
-};
+use sys::{self, kAUVoiceIOProperty_BypassVoiceProcessing};
 use sys::{
     kAudioDevicePropertyAvailableNominalSampleRates, kAudioDevicePropertyDeviceIsAlive,
     kAudioDevicePropertyDeviceNameCFString, kAudioDevicePropertyHogMode,

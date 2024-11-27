@@ -356,7 +356,9 @@ impl Drop for AudioUnit {
             //
             // A user should explicitly terminate the `AudioUnit` if they want to handle errors (we
             // still need to provide a way to actually do that).
-            self.stop().ok();
+
+            //Comment out the AudioOutputUnitStop call, because it's known to cause deadlocks on macOS.
+            //self.stop().ok();
             error::Error::from_os_status(sys::AudioUnitUninitialize(self.instance)).ok();
 
             self.free_render_callback();

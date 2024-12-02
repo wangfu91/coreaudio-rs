@@ -23,6 +23,7 @@ use std::mem;
 use std::os::raw::{c_uint, c_void};
 use std::ptr;
 
+use log::info;
 use sys;
 
 pub use self::audio_format::AudioFormat;
@@ -357,8 +358,8 @@ impl Drop for AudioUnit {
             // A user should explicitly terminate the `AudioUnit` if they want to handle errors (we
             // still need to provide a way to actually do that).
 
-            //Comment out the AudioOutputUnitStop call, because it's known to cause deadlocks on macOS.
-            //self.stop().ok();
+            self.stop().ok();
+            info!("------ Audio Unit stopped.");
             error::Error::from_os_status(sys::AudioUnitUninitialize(self.instance)).ok();
 
             self.free_render_callback();

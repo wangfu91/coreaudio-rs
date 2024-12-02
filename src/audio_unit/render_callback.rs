@@ -1,9 +1,11 @@
 use super::audio_format::LinearPcmFlags;
 use super::{AudioUnit, Element, Scope};
 use crate::error::{self, Error};
+use log::warn;
 use std::mem;
 use std::os::raw::c_void;
 use std::slice;
+use std::sync::atomic::AtomicBool;
 use sys;
 
 pub use self::action_flags::ActionFlags;
@@ -531,7 +533,11 @@ impl AudioUnit {
     }
 
     /// Pass an input callback (aka "Input Procedure") to the **AudioUnit**.
-    pub fn set_input_callback<F, D>(&mut self, mut f: F) -> Result<(), Error>
+    pub fn set_input_callback<F, D>(
+        &mut self,
+        capturing: std::sync::Arc<AtomicBool>,
+        mut f: F,
+    ) -> Result<(), Error>
     where
         F: FnMut(Args<D>) -> Result<(), ()> + 'static,
         D: Data,
@@ -606,6 +612,11 @@ impl AudioUnit {
                                   in_number_frames: sys::UInt32,
                                   _io_data: *mut sys::AudioBufferList|
               -> sys::OSStatus {
+            if !capturing.load(std::sync::atomic::Ordering::SeqCst) {
+                warn!("------ [input callback] capturing has stopped, skip rest of the callback");
+                return error::Error::Unspecified.as_os_status();
+            }
+
             // If the buffer size has changed, ensure the AudioBuffer is the correct size.
             if buffer_frame_size != in_number_frames {
                 unsafe {

@@ -1,7 +1,7 @@
 use super::audio_format::LinearPcmFlags;
 use super::{AudioUnit, Element, Scope};
 use crate::error::{self, Error};
-use log::warn;
+use log::{debug, warn};
 use std::mem;
 use std::os::raw::c_void;
 use std::slice;
@@ -613,7 +613,7 @@ impl AudioUnit {
                                   _io_data: *mut sys::AudioBufferList|
               -> sys::OSStatus {
             if !capturing.load(std::sync::atomic::Ordering::SeqCst) {
-                warn!("------ [input callback] capturing has stopped, skip rest of the callback");
+                debug!("------ [input callback] capturing has stopped, skip rest of the callback");
                 return error::Error::Unspecified.as_os_status();
             }
 
